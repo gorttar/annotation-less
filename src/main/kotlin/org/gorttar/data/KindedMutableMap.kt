@@ -30,16 +30,16 @@ interface KindedMutableMap<K : Kind<K, *>> {
 /**
  * [ConcurrentHashMap] backed implementation of [KindedMutableMap]
  */
-private class KindedConcurrentHashMap<K : Kind<K, *>> : KindedMutableMap<K> {
-    private val data: MutableMap<Any, Kind<K, *>> = ConcurrentHashMap()
-
-    @Suppress("UNCHECKED_CAST")
-    override fun <A : Any> get(key: A): Kind<K, A>? = data[key] as Kind<K, A>?
-    override fun <A : Any> invoke(key: A): ValueSetter<K, A> =
-        { it?.let { data[key] = it } ?: data.remove(key).discarded }
-}
-
-fun <K : Kind<K, *>> kindedConcurrentHashMap(): KindedMutableMap<K> = KindedConcurrentHashMap()
+fun <K : Kind<K, *>> kindedConcurrentHashMap(): KindedMutableMap<K> =
+    ConcurrentHashMap<Any, Kind<K, *>>().let { data ->
+        object : KindedMutableMap<K> {
+            @Suppress("UNCHECKED_CAST")
+            override fun <A : Any> get(key: A): Kind<K, A>? = data[key] as Kind<K, A>?
+            override fun <A : Any> invoke(key: A): ValueSetter<K, A> = {
+                it?.let { data[key] = it } ?: data.remove(key).discarded
+            }
+        }
+    }
 
 /**
  * syntax sugar for invoking [this] [ValueSetter] on [value]
