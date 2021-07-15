@@ -19,24 +19,28 @@ import kotlin.reflect.jvm.javaMethod
 
 /**
  * creates a proxy of type [T] which delegates all calls to an object lazily created by [constructor]
- * Warning! Proxy changes the behavior of [Any.equals] method to identity equals
+ * Warning! Proxy changes the behavior of [Any.equals] and [Any.hashCode] functions to identity equals/hashCode
  * in order to fulfil [Any.equals] requirements
  */
 inline fun <reified T : Any> lazyProxy(crossinline constructor: () -> T): T = T::class.requireAllOpen().run {
     ByteBuddy().subclass(java).method(ElementMatchers.any()).intercept(
-        lazy { constructor() }.let {
+        kindedLazy { constructor() }.let {
             InvocationHandlerAdapter.of { proxy, m, args ->
-                if (Any::equals.isOverriddenBy(m)) proxy === args.first()
-                else m(it.value, *args)
+                when (m) {
+                    in Any::equals -> proxy === args.first()
+                    in Any::hashCode -> System.identityHashCode(proxy)
+                    else -> m(it.fix().value, *args)
+                }
             }
         }
     ).make().load(java.classLoader)
 }.loaded.instantiate<T>()
 
 /**
- * checks if [this] [KFunction] has [javaMethod] overridden by [override]
+ * checks if [this] [KFunction] has [javaMethod] overridden by [override].
+ * In other words [this] contains [override] or [override] in [this]
  */
-fun KFunction<*>.isOverriddenBy(
+operator fun KFunction<*>.contains(
     override: Method?
 ): Boolean = javaMethod == override || override != null && isOverriddenByCache.computeIfAbsent(this) {
     ConcurrentHashMap()

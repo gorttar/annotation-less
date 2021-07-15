@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import java.lang.reflect.Constructor
 import kotlin.reflect.KClass
-import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.full.functions
 import kotlin.reflect.jvm.javaConstructor
 import kotlin.reflect.jvm.javaMethod
 
@@ -113,7 +113,7 @@ inline fun <reified S : Any> Assert<*>.isInstanceOf(): Assert<S> = isNotNull().i
 
 internal class LazyProxyKtTest {
     @Test
-    fun isOverriddenBy() = assertAll {
+    fun contains() = assertAll {
         class C {
             override fun equals(other: Any?): Boolean = this === other || other is C
 
@@ -123,20 +123,16 @@ internal class LazyProxyKtTest {
             override fun hashCode(): Int = 0
         }
 
-
         val equals = Any::equals
-        assertThat(equals.isOverriddenBy(equals.javaMethod)).isTrue()
+
+        assertThat(equals.javaMethod in equals).isTrue()
         assertThat(
-            equals.isOverriddenBy(
-                C::class.declaredFunctions.single { it.name == equals.name && it.parameters.size == 2 }.javaMethod
-            )
+            C::class.functions.single { it.name == equals.name && it.parameters.size == 2 }.javaMethod in equals
         ).isTrue()
-        assertThat(equals.isOverriddenBy(null)).isFalse()
-        assertThat(equals.isOverriddenBy(C::eq.javaMethod)).isFalse()
+        assertThat(null in equals).isFalse()
+        assertThat(C::eq.javaMethod in equals).isFalse()
         assertThat(
-            equals.isOverriddenBy(
-                C::class.declaredFunctions.single { it.name == equals.name && it.parameters.size == 1 }.javaMethod
-            )
+            C::class.functions.single { it.name == equals.name && it.parameters.size == 1 }.javaMethod in equals
         ).isFalse()
     }
 
