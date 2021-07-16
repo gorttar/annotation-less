@@ -5,6 +5,7 @@ import assertk.assertAll
 import assertk.assertThat
 import assertk.assertions.*
 import org.gorttar.annotation.AllOpen
+import org.gorttar.common.discarded
 import org.gorttar.test.dynamicTests
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -170,40 +171,46 @@ internal class LazyProxyKtTest {
     }
 
     @Test
-    fun `instantiate WhateverOpen`() =
-        assertThat { WhateverOpen::class.java.instantiate() }.isSuccess().isInstanceOf<WhateverOpen>().given { }
+    fun `noArgConstructor WhateverOpen`() = assertThat {
+        WhateverOpen::class.java.noArgConstructor(WhateverOpen::class).newInstance()
+    }.isSuccess().isInstanceOf<WhateverOpen>().discarded
 
     @Test
-    fun `instantiate WhateverClass`() = assertThat { WhateverClass::class.java.instantiate() }.isSuccess().given {
-        assertThat(it).isInstanceOf<WhateverClass>()
+    fun `noArgConstructor WhateverClass`() = assertThat {
+        WhateverClass::class.java.noArgConstructor(WhateverClass::class).newInstance()
+    }.isSuccess().isInstanceOf<WhateverClass>().given {
         assertThat(it.constructorCalled).isFalse()
         assertThat(it.x).isNull()
     }
 
     @Test
-    fun `instantiate WhateverData`() = assertThat { WhateverData::class.java.instantiate() }.isSuccess().given {
-        assertThat(it).isInstanceOf<WhateverData>()
+    fun `noArgConstructor WhateverData`() = assertThat {
+        WhateverData::class.java.noArgConstructor(WhateverData::class).newInstance()
+    }.isSuccess().isInstanceOf<WhateverData>().given {
         assertThat(it.x).isZero()
-        /** see [instantiate] disclaimer */
+        /** see [noArgConstructor] disclaimer */
         assertThat(it.s).isNull()
     }
 
     @Test
-    fun `instantiate WhateverEnum`() = assertThat { WhateverEnum::class.java.instantiate() }.isFailure()
-        .hasMessage("Shouldn't instantiate enums!")
+    fun `noArgConstructor WhateverEnum`() = assertThat {
+        WhateverEnum::class.java.noArgConstructor(WhateverEnum::class)
+    }.isFailure().hasMessage("Shouldn't instantiate enums!")
 
     @Test
-    fun `instantiate WhateverSealed`() = assertThat {
-        WhateverClass::class.java.instantiate<WhateverSealed>()
+    fun `noArgConstructor WhateverSealed`() = assertThat {
+        WhateverSealed::class.java.noArgConstructor(WhateverSealed::class)
     }.isFailure().hasMessage("Shouldn't instantiate sealed classes!")
 
     @Test
-    fun `instantiate WhateverObject`() = assertThat { WhateverObject::class.java.instantiate() }.isFailure()
-        .hasMessage("Shouldn't instantiate objects!")
+    fun `noArgConstructor WhateverObject`() = assertThat {
+        WhateverObject::class.java.noArgConstructor(WhateverObject::class)
+    }.isFailure().hasMessage("Shouldn't instantiate objects!")
 
     @Test
-    fun `instantiate Nothing`() = assertThat { Nothing::class.java.instantiate() }.isFailure()
-        .hasMessage("Shouldn't instantiate Nothing!")
+    fun `noArgConstructor Nothing`() = assertThat {
+        Nothing::class.java.noArgConstructor(Nothing::class)
+    }.isFailure().hasMessage("Shouldn't instantiate Nothing!")
 
     @TestFactory
     fun firstNoArgConstructor() = dynamicTests(
